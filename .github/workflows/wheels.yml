@@ -1,0 +1,64 @@
+name: Build Python Wheels
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build_wheels:
+    name: Build wheels for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        # os: [ubuntu-20.04, windows-2019, macOS-11]
+    steps:
+      - uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          install: tar wget
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v3
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.16.5
+      - name: Build wheels
+        run: python -m cibuildwheel --output-dir wheelhouse
+        env:
+          CIBW_BEFORE_ALL_WINDOWS: >-
+            vcpkg install gmp mpfr
+          CIBW_BEFORE_ALL_MACOS: >-
+            brew install gmp mpfr wget gnu-tar && brew reinstall python@3.9
+          CIBW_BEFORE_ALL_LINUX: >-
+            if command -v apk; then apk --no-cache add cmake gcc g++ wget gmp gmp-dev mpfr4 mpfr-dev;
+            else cd {package}/.. &&
+            yum install -y wget cmake gcc gcc-c++ &&
+            wget https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz &&
+            tar -Jxf gmp-6.3.0.tar.xz && cd gmp-6.3.0 &&
+            ./configure && make && make install && cd .. &&
+            wget https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.1.tar.xz &&
+            tar -Jxf mpfr-4.2.1.tar.xz && cd mpfr-4.2.1 &&
+            ./configure && make && make install; fi
+          CIBW_BEFORE_BUILD: >-
+            cd {package}/.. &&
+            wget https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.bz2 &&
+            tar -jxf boost_1_84_0.tar.bz2 &&
+            cd boost_1_84_0 &&
+            ./bootstrap.sh --with-python=$(which python) &&
+            ./b2 --with-date_time --with-filesystem --with-python --with-system --with-iostreams --with-regex --with-test install
+          CIBW_BEFORE_BUILD_WINDOWS: >-
+            msys2 -c "
+            wget https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.bz2 &&
+            tar -jxf boost_1_84_0.tar.bz2 &&
+            cd boost_1_84_0 &&
+            ./bootstrap.sh --with-python=$(which python) &&
+            ./b2 --with-date_time --with-filesystem --with-python --with-system --with-iostreams --with-regex --with-test install
+            "
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
+          CIBW_SKIP: "pp*"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
