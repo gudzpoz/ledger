@@ -77,8 +77,13 @@ if (USE_PYTHON)
     message(ERROR "Building the python module requires BUILD_LIBRARY=ON.")
   endif()
 
-  find_package(Python
-    COMPONENTS Interpreter Development Development.Module REQUIRED)
+  if (SKBUILD)
+    find_package(Python
+      COMPONENTS Interpreter Development.Module REQUIRED)
+  else()
+    find_package(Python
+      COMPONENTS Interpreter Development Development.Module REQUIRED)
+  endif()
   if (PYTHON_FOUND AND ${Python_VERSION} VERSION_GREATER_EQUAL ${Required_Python_Version})
     set(BOOST_PYTHON "python${Python_VERSION_MAJOR}${Python_VERSION_MINOR}")
     set(HAVE_BOOST_PYTHON 1)

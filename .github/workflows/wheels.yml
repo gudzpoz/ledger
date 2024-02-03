@@ -31,14 +31,17 @@ jobs:
           CIBW_BEFORE_ALL_MACOS: >-
             brew install gmp mpfr wget gnu-tar && brew reinstall python@3.9
           CIBW_BEFORE_ALL_LINUX: >-
-            if command -v apk; then apk --no-cache add cmake gcc g++ wget gmp gmp-dev mpfr4 mpfr-dev;
+            if command -v apk; then apk --no-cache add cmake gcc g++ wget gmp gmp-dev mpfr4 mpfr-dev gpgme gpgme-dev;
             else cd {package}/.. &&
-            yum install -y wget cmake gcc gcc-c++ &&
+            yum install -y wget cmake gcc gcc-c++ gnupg2 gnupg2-smime libgpg-error libgpg-error-devel libassuan libassuan-devel &&
             wget https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz &&
             tar -Jxf gmp-6.3.0.tar.xz && cd gmp-6.3.0 &&
             ./configure && make && make install && cd .. &&
             wget https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.1.tar.xz &&
             tar -Jxf mpfr-4.2.1.tar.xz && cd mpfr-4.2.1 &&
+            ./configure && make && make install && cd .. &&
+            wget https://www.gnupg.org/ftp/gcrypt/gpgme/gpgme-1.13.1.tar.bz2 &&
+            tar -jxf gpgme-1.13.1.tar.bz2 && cd gpgme-1.13.1 &&
             ./configure && make && make install; fi
           CIBW_BEFORE_BUILD: >-
             cd {package}/.. &&
@@ -57,7 +60,7 @@ jobs:
             "
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
-          CIBW_SKIP: "pp*"
+          CIBW_SKIP: "pp* *-manylinux_i686"
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
