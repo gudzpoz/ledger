@@ -58,6 +58,8 @@ jobs:
             ./bootstrap.sh --with-python=$(which python) &&
             ./b2 --with-date_time --with-filesystem --with-python --with-system --with-iostreams --with-regex --with-test install
             "
+          CIBW_TEST_COMMAND: >-
+            python3 -m unittest discover {project}/test/python -p '*.py'
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
           CIBW_SKIP: "pp* *-manylinux_i686"
