@@ -458,7 +458,7 @@ expr_t::func_t global_scope_t::look_for_command(scope_t&      scope,
 
 void global_scope_t::visit_man_page() const
 {
-#if !defined(_WIN32) && !defined(__CYGWIN__)
+#if !defined(_WIN32) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__)
   int pid = fork();
   if (pid < 0) {
     throw std::logic_error(_("Failed to fork child process"));
@@ -474,7 +474,7 @@ void global_scope_t::visit_man_page() const
   int status = -1;
   wait(&status);
 #endif
-  exit(0);                      // parent
+  throw error_count(0, "");     // parent
 }
 
 void handle_debug_options(int argc, char * argv[])
